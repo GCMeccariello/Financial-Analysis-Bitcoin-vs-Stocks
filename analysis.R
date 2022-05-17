@@ -94,8 +94,8 @@ agg.btc.cor # no correlation --> 0.044
 
 
 
-
-
+# return correlations of crypto assets (e.g bitcoin, Ether) and traditional assets (e.g stocks, bonds) change over time and 
+# whether they differ in rising and falling markets (of traditional assets) --> upside and downside of betas of a regression of crypto return on different traditional assets.
 
 
 
