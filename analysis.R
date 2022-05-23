@@ -258,7 +258,6 @@ eth.beta <- cov.return[1,5] / standev.returns[5]**2
 eth.beta
 
 
-
 # correlation for entire time span
 round(cor(log_returns),3)
 
