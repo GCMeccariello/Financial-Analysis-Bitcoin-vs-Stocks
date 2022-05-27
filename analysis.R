@@ -1,15 +1,12 @@
-# TSA
+# Time Series Analysis in Finance
+#
+# Analysis of return correlation dynamics between traditional and crypto assets during boom-and-bust cycles
+#
+# 27.05.2022
+# Giancarlo Meccariello
 
-# S&P 500
-# SPI
 
-#install.packages("quantmod")
-
-
-if(!require('YRmisc')) {
-  install.packages('YRmisc')
-  library('YRmisc')
-}
+library('YRmisc')
 library(quantmod)
 library(zoo)
 library(xts)
@@ -19,6 +16,7 @@ library("Hmisc")
 library('YRmisc')
 
 
+# ============================================================== Load data
 # loading data from yahoo
 data <- NULL
 tickers <- c('^GSPC', 'AGG', 'GC=F','BTC-USD','ETH-USD')
@@ -27,13 +25,12 @@ for (Ticker in tickers){
                       getSymbols.yahoo(Ticker, from="2018-01-01", end='2022-04', periodicity = "daily", auto.assign=FALSE)[,6]) #start 2017 or 2014?
 }
 
-
 # removing NA
 data <- na.omit(data)
 
 colnames(data) <- c('S&P500', 'AGG', 'Gold','BTC-USD', 'ETH-USD')
 
-
+# ============================================================== plot time series
 # plotting all five time series
 par(mfrow = c(5,1))
 plot(data$`S&P500`, main='S&P500', ylab='Price in [USD]')
@@ -43,7 +40,7 @@ plot(data$`BTC-USD`, main='BTC-USD', ylab='Price in [USD]')
 plot(data$`ETH-USD`, main='ETH-USD', ylab='Price in [USD]')
 
 
-# plot of log of all four lines
+# plot of log of all four assets
 data.log <- log(data)  
 par(mfrow = c(1,1))
 plot(data.log)
@@ -66,34 +63,7 @@ for (i in l) {
 }
 
 
-# __________________________________________________________________________________ does not work
-## Plot first set of data and draw its axis
-plot(data[,1:2], axes=FALSE, xlab="", ylab="", ylim=c(-1000,5000), 
-     type="l",col="black", main="Mike's test data")
-#axis(2,col="black",las=1)  ## las=1 makes horizontal labels
-#mtext("Beta Gal Absorbance",side=2,line=2.5)
-#box()
-
-## Allow a second plot on the same graph
-par(new=TRUE)
-
-## Plot the second plot and put axis scale on right
-plot(data.log[,3:4], pch=15,  xlab="", ylab="", 
-     axes=FALSE, type="l", col="red")
-## a little farther out (line=4) to make room for labels
-mtext("Cell Density",side=4,col="red",line=4) 
-axis(4, ylim=c(0,7000), col="red",col.axis="red",las=1)
-
-## Draw the time axis
-axis(1,pretty(range(time),10))
-mtext("Time (Hours)",side=1,col="black",line=2.5)  
-
-## Add Legend
-legend("topleft",legend=c("Beta Gal","Cell Density"),
-       text.col=c("black","red"),pch=c(16,15),col=c("black","red"))
-
-# __________________________________________________________________________________
-
+# ============================================================== Decomposition
 # decomposition of data
 par(mfrow = c(1,1))
 sp500.dec <- decompose(data.ts[,1])
@@ -112,7 +82,7 @@ eth.dec <- decompose(data.ts[,5])
 plot(eth.dec)
 
 
-
+# function to change the title of the decomposition plot
 my_plot.decomposed.ts = function(x, title="", ...) {
   xx <- x$x
   if (is.null(xx)) 
@@ -124,10 +94,8 @@ my_plot.decomposed.ts = function(x, title="", ...) {
        main=title, ...)
 }
 
-par(mfrow=c(2,1))
 my_plot.decomposed.ts(sp500.dec, "Decomposition of S&P500")
 my_plot.decomposed.ts(btc.dec, "Decomposition of Bitcoin")
-
 my_plot.decomposed.ts(agg.dec, "Decomposition of AGG")
 my_plot.decomposed.ts(gold.dec, "Decomposition of Gold")
 my_plot.decomposed.ts(eth.dec, "Decomposition of Etherium")
@@ -135,19 +103,17 @@ my_plot.decomposed.ts(eth.dec, "Decomposition of Etherium")
 
 
 
-
-
+# ============================================================== Stationarity
 # checking if time series is stationary. otherwhise use diff(log()) --> augmented dickey-fuller test
 sp500.adf <- adf.test(data.ts[,1])
 sp500.adf # if p value > 0.05, we fail to reject nullhypothesis --> not stationary
-sp500.adf <- adf.test(diff(data.ts[,1]))
+sp500.adf <- adf.test(diff(log(data.ts[,1])))
 sp500.adf$p.value # with a log transformation and differentiation --> stationary
-a <- 
 
-agg.adf <- adf.test(diff(data.ts[,2]))
+agg.adf <- adf.test(diff(log(data.ts[,2])))
 agg.adf$p.value
 
-gold.adf <- adf.test(diff(data.ts[,3]))
+gold.adf <- adf.test(diff(log(data.ts[,3])))
 gold.adf$p.value
 
 btc.adf <- adf.test(diff(log(data.ts[,4])))
@@ -173,7 +139,6 @@ legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(log(data.ts[,2
 plot(diff(log(data.ts[,2])), main='Differentiation of log transformed AGG', ylab='')
 legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(diff(log(data.ts[,2])))$p.value,3)))
 
-
 par(mfrow=c(3,1))
 plot(data.ts[,3], main='Gold', ylab='')
 legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(data.ts[,3])$p.value,3)))
@@ -182,7 +147,6 @@ legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(log(data.ts[,3
 plot(diff(log(data.ts[,3])), main='Differentiation of log transformed Gold', ylab='')
 legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(diff(log(data.ts[,3])))$p.value,3)))
 
-
 par(mfrow=c(3,1))
 plot(data.ts[,4], main='BTC-USD', ylab='')
 legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(data.ts[,4])$p.value,3)))
@@ -190,7 +154,6 @@ plot(log(data.ts[,4]), main='Log transformed BTC-USD', ylab='')
 legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(log(data.ts[,4]))$p.value,3)))
 plot(diff(log(data.ts[,4])), main='Differentiation of log transformed BTC-USD', ylab='')
 legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(diff(log(data.ts[,4])))$p.value,3)))
-
 
 par(mfrow=c(3,1))
 plot(data.ts[,5], main='ETH-USD', ylab='')
@@ -201,7 +164,7 @@ plot(diff(log(data.ts[,5])), main='Differentiation of log transformed ETH-USD', 
 legend("topleft", legend = sprintf("P-Value: %s ", round(adf.test(diff(log(data.ts[,5])))$p.value,3)))
 
 
-# __________________________________________________________________________________ Entire timeline
+# ============================================================== Statistics of entire timeline
 
 # log returns for all three S&P500 = [,1], agg = [,2], gold = [,3], btc = [,4], eth = [,5]
 log_returns <- diff(log(data.ts))
@@ -210,53 +173,35 @@ log_returns <- diff(log(data.ts))
 mean.returns <- colMeans(log_returns)
 mean.returns
 
-
-### Calculate Standard Deviation
-
+# Calculate Standard Deviation
 standev.returns <- round(sapply(log_returns, sd, na.rm = TRUE),3)
 standev.returns
 
-### calculate max
-
+# calculate max
 max.return <- round(sapply(log_returns, max, na.rm = TRUE),3)
 max.return
 
-### calculate min
-
+# calculate min
 min.return <- round(sapply(log_returns, min, na.rm = TRUE),3)
 min.return
 
-### calculate skewness
-
+# calculate skewness
 skew.return <- round(sapply(log_returns, skewness, na.rm = TRUE),3)
 skew.return
 
-### calculate kurtosis
-
+# calculate kurtosis
 kurt.return <- round(sapply(log_returns, kurtosis, na.rm = TRUE),3)
 kurt.return
 
-### construct a correlation matrix
+# construct a correlation matrix
 cor.return <- cor(log_returns)
 cor.return
 
-### construct a covariance matrix
+# construct a covariance matrix
 cov.return <- cov(log_returns)
 cov.return
 
-### Calculate betas analitically
-agg.beta <- cov.return[1,2] / standev.returns[2]**2
-agg.beta
-
-dbc.beta <- cov.return[1,3] / standev.returns[3]**2
-dbc.beta
-
-btc.beta <- cov.return[1,4] / standev.returns[4]**2
-btc.beta
-
-eth.beta <- cov.return[1,5] / standev.returns[5]**2
-eth.beta
-
+# ============================================================== Correlation and betas entire timeline
 # correlation for entire time span
 round(cor(log_returns),3)
 
@@ -284,8 +229,9 @@ eth.gold.betas <-round( pt.dbeta(log_returns[,5], log_returns[,3], 0) ,3)
 eth.gold.betas
 
 
-# UPSIDE for two individual timeframes.
+# ============================================================== Correlation for UP trend
 
+# UPSIDE for two individual timeframes.
 # uptrend:
 # 26.12.18 - 12.02.20
 # 247:531
@@ -301,7 +247,7 @@ log_return_2 <- diff(log(data[559:1007,]))
 log_return_2 <- na.omit(log_return_2)
 round(cor(log_return_2),3)
 
-
+# ============================================================== Correlation for Down trend
 
 # DOWN trend:
 # 20.02.20 - 23.03.20
@@ -318,8 +264,7 @@ log_return_4 <- diff(log(data[1066:1104,]))
 log_return_4 <- na.omit(log_return_4)
 round(cor(log_return_4),3)
 
-# __________________________________________________________________________________ over time
-
+# ============================================================== Rolling correlation
 # rolling correlation BITCOIN and S&P500
 cor_btc_sp500 <- NULL
 for (a in c(1:(length(data[,1]) - 60))) {
@@ -338,7 +283,6 @@ abline(h=mean(cor_btc_sp500), col='red')
 text(round(mean(cor_btc_sp500),3), x=(c(2018)), y = mean(cor_btc_sp500), pos = 1, col='red')
 legend("topleft", legend = "Average Correlation", pch = "-", col = "red")
 
-par(mfrow=c(1,1), mai = c(0.5, 0.5, 0.5, 0.5))
 
 # rolling correlation ETHERIUM and S&P500
 cor_eth_sp500 <- NULL
@@ -357,8 +301,6 @@ plot(cor_eth_sp500, ylim=c(-1,1),ylab='Correlation [-]', main='60 Days Rolling C
 abline(h=mean(cor_eth_sp500), col='red')
 text(round(mean(cor_eth_sp500),3), x=(c(2018)), y = mean(cor_eth_sp500), pos = 1, col='red')
 legend("topleft", legend = "Average Correlation", pch = "-", col = "red")
-
-
 
 
 # rolling correlation BITCOIN and AGG
@@ -380,7 +322,6 @@ text(round(mean(cor_btc_agg),3), x=(c(2018)), y = mean(cor_btc_agg), pos = 1, co
 legend("topleft", legend = "Average Correlation", pch = "-", col = "red")
 
 
-
 # rolling correlation ETHERIUM and AGG
 cor_eth_agg <- NULL
 for (a in c(1:(length(data[,1]) - 60))) {
@@ -398,7 +339,6 @@ plot(cor_eth_agg, ylim=c(-1,1),ylab='Correlation [-]', main='60 Days Rolling Cor
 abline(h=mean(cor_eth_agg), col='red')
 text(round(mean(cor_eth_agg),3), x=(c(2018)), y = mean(cor_eth_agg), pos = 1, col='red')
 legend("topleft", legend = "Average Correlation", pch = "-", col = "red")
-
 
 
 # rolling correlation BITCOIN and GOLD
@@ -420,7 +360,6 @@ text(round(mean(cor_btc_gold),3), x=(c(2018)), y = mean(cor_btc_gold), pos = 3, 
 legend("topleft", legend = "Average Correlation", pch = "-", col = "red")
 
 
-
 # rolling correlation ETHERIUM and GOLD
 cor_eth_gold <- NULL
 for (a in c(1:(length(data[,1]) - 60))) {
@@ -438,7 +377,3 @@ plot(cor_eth_gold, ylim=c(-1,1),ylab='Correlation [-]', main='60 Days Rolling Co
 abline(h=mean(cor_eth_gold), col='red')
 text(round(mean(cor_eth_gold),3), x=(c(2018)), y = mean(cor_eth_gold), pos = 1, col='red')
 legend("topleft", legend = "Average Correlation", pch = "-", col = "red")
-
-
-
-
